@@ -70,7 +70,7 @@ export async function validateAllowedProjectIds(projectIds: number[]): Promise<s
     return null;
   }
 
-  const uniqueIds = [...new Set(projectIds)];
+  const uniqueIds = Array.from(new Set(projectIds));
   if (uniqueIds.length !== projectIds.length) {
     return "רשימת לוחות לא תקינה";
   }
@@ -92,5 +92,7 @@ export function normalizeAllowedProjectIds(value: unknown): number[] {
     return [];
   }
 
-  return [...new Set(value.map((item) => Number(item)).filter((item) => !Number.isNaN(item)))];
+  return Array.from(
+    new Set(value.map((item) => Number(item)).filter((item) => !Number.isNaN(item)))
+  );
 }

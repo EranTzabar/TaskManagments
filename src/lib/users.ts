@@ -120,7 +120,7 @@ export async function createUser(payload: UserCreatePayload): Promise<UserListIt
       : normalizeAllowedProjectIds(payload.allowedProjectIds ?? []);
 
   if (payload.role === "user") {
-    const allowedError = await validateAllowedProjectIds(allowedProjectIds);
+    const allowedError = await validateAllowedProjectIds(allowedProjectIds ?? []);
     if (allowedError) {
       throw new Error(allowedError);
     }
