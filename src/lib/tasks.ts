@@ -258,11 +258,7 @@ export async function updateTask(
     update.title = title;
   }
   if (typeof payload.details === "string") {
-    const details = payload.details.trim();
-    if (!details) {
-      throw new Error("Details cannot be empty");
-    }
-    update.details = details;
+    update.details = payload.details.trim();
   }
   if (payload.priority !== undefined) {
     if (!TASK_PRIORITIES.includes(payload.priority)) {
@@ -351,15 +347,11 @@ export function validateTaskCreateInput(
   payload: TaskCreateInput
 ): { ok: true; data: TaskCreateInput } | { ok: false; error: string } {
   const title = payload.title?.trim();
-  const details = payload.details?.trim();
+  const details = typeof payload.details === "string" ? payload.details.trim() : "";
 
   const titleError = title ? validateTaskTitle(title) : "כותרת נדרשת";
   if (titleError) {
     return { ok: false, error: titleError };
-  }
-
-  if (!details) {
-    return { ok: false, error: "Details are required" };
   }
 
   if (!TASK_PRIORITIES.includes(payload.priority)) {

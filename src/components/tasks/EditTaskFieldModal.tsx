@@ -59,9 +59,6 @@ export default function EditTaskFieldModal({
         setError(titleError);
         return;
       }
-    } else if (!trimmed) {
-      setError(`${fieldLabels[field]} לא יכול להיות ריק`);
-      return;
     }
 
     setError(null);
@@ -112,7 +109,6 @@ export default function EditTaskFieldModal({
             <textarea
               value={value}
               onChange={(event) => setValue(event.target.value)}
-              required
               rows={6}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-700 resize-y min-h-[120px]"
             />

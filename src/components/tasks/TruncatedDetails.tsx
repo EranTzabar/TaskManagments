@@ -116,7 +116,7 @@ export default function TruncatedDetails({
         aria-describedby={open ? tooltipId : undefined}
         title={isTruncated ? "לחץ להצגת פירוט מלא" : undefined}
       >
-        {details}
+        {details.trim() ? details : "—"}
       </button>
 
       {open && isTruncated && typeof document !== "undefined"

@@ -134,7 +134,6 @@ export default function AddTaskTableRow({
           form={formId}
           value={details}
           onChange={(event) => setDetails(event.target.value)}
-          required
           rows={2}
           placeholder="פירוט"
           className={`${fieldClassName} resize-y min-h-[56px]`}

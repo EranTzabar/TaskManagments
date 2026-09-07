@@ -43,7 +43,7 @@ const TaskSchema = new Schema<ITaskDocument>(
     },
     details: {
       type: String,
-      required: true,
+      default: "",
     },
     status: {
       type: String,

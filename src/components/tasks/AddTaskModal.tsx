@@ -128,7 +128,6 @@ export default function AddTaskModal({
           <textarea
             value={details}
             onChange={(event) => setDetails(event.target.value)}
-            required
             rows={4}
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-700 resize-y min-h-[96px]"
           />
