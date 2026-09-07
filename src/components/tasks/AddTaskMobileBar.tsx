@@ -98,10 +98,12 @@ export default function AddTaskMobileBar({
           ))}
         </select>
         <textarea
+          name="details"
           value={details}
           onChange={(event) => setDetails(event.target.value)}
+          required={false}
           rows={3}
-          placeholder="פירוט"
+          placeholder="פירוט (לא חובה)"
           className={`${fieldClassName} resize-y min-h-[88px]`}
         />
         {error ? (

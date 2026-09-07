@@ -132,10 +132,12 @@ export default function AddTaskTableRow({
       <td className="py-3 px-4 align-top min-w-0">
         <textarea
           form={formId}
+          name="details"
           value={details}
           onChange={(event) => setDetails(event.target.value)}
+          required={false}
           rows={2}
-          placeholder="פירוט"
+          placeholder="פירוט (לא חובה)"
           className={`${fieldClassName} resize-y min-h-[56px]`}
         />
         {error ? (

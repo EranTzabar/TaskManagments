@@ -124,11 +124,14 @@ export default function AddTaskModal({
         </label>
 
         <label className="block space-y-1.5">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">פרטים</span>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">פירוט</span>
           <textarea
+            name="details"
             value={details}
             onChange={(event) => setDetails(event.target.value)}
+            required={false}
             rows={4}
+            placeholder="לא חובה"
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-700 resize-y min-h-[96px]"
           />
         </label>

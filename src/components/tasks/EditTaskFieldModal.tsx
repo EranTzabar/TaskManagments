@@ -84,7 +84,7 @@ export default function EditTaskFieldModal({
 
   return (
     <Modal open={open} onClose={handleClose} className="max-w-lg">
-      <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+      <form noValidate onSubmit={handleSubmit} className="space-y-4 pt-2">
         <div>
           <h3 className="text-xl font-bold text-slate-800 dark:text-white">
             עריכת {fieldLabels[field]}
@@ -107,14 +107,20 @@ export default function EditTaskFieldModal({
           </div>
           {isDetails ? (
             <textarea
+              key="details"
+              name="details"
               value={value}
               onChange={(event) => setValue(event.target.value)}
+              required={false}
               rows={6}
+              placeholder="לא חובה"
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-700 resize-y min-h-[120px]"
             />
           ) : (
             <input
+              key="title"
               type="text"
+              name="title"
               value={value}
               onChange={(event) => setValue(event.target.value)}
               required
@@ -141,6 +147,7 @@ export default function EditTaskFieldModal({
           </button>
           <button
             type="submit"
+            formNoValidate
             disabled={submitting}
             className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition shadow disabled:opacity-60"
           >

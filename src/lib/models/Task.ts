@@ -44,6 +44,7 @@ const TaskSchema = new Schema<ITaskDocument>(
     details: {
       type: String,
       default: "",
+      required: false,
     },
     status: {
       type: String,
@@ -75,7 +76,7 @@ const TaskSchema = new Schema<ITaskDocument>(
   }
 );
 
-if (process.env.NODE_ENV !== "production" && mongoose.models.Task) {
+if (mongoose.models.Task) {
   mongoose.deleteModel("Task");
 }
 
