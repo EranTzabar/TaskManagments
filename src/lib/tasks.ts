@@ -35,6 +35,7 @@ function serializeTask(doc: {
   status?: TaskStatus;
   completed?: boolean;
   notes: string;
+  archived?: boolean;
   parentTaskId?: number | null;
   sortOrder?: number;
   customFields?: Map<string, string> | Record<string, string>;
@@ -48,6 +49,7 @@ function serializeTask(doc: {
     details: doc.details,
     status: resolveTaskStatus(doc),
     notes: doc.notes,
+    archived: doc.archived === true,
     parentTaskId:
       doc.parentTaskId != null && doc.parentTaskId !== undefined
         ? Number(doc.parentTaskId)
@@ -74,7 +76,7 @@ function deriveParentStatus(subtasks: { status: TaskStatus }[]): TaskStatus {
 export async function recomputeParentStatus(parentTaskId: number): Promise<Task | null> {
   await connectDB();
 
-  const subtasks = await TaskModel.find({ parentTaskId }).lean();
+  const subtasks = await TaskModel.find({ parentTaskId, archived: { $ne: true } }).lean();
   if (subtasks.length === 0) {
     return null;
   }
@@ -111,8 +113,8 @@ async function getNextTaskId(): Promise<number> {
 
 function getParentGroupQuery(projectId: number, parentTaskId: number | null) {
   return parentTaskId == null
-    ? { projectId, parentTaskId: null }
-    : { projectId, parentTaskId };
+    ? { projectId, parentTaskId: null, archived: { $ne: true } }
+    : { projectId, parentTaskId, archived: { $ne: true } };
 }
 
 async function getNextSortOrder(
@@ -126,7 +128,7 @@ async function getNextSortOrder(
 }
 
 async function ensureSortOrders(projectId: number): Promise<void> {
-  const docs = await TaskModel.find({ projectId }).lean();
+  const docs = await TaskModel.find({ projectId, archived: { $ne: true } }).lean();
   const groups = new Map<string, typeof docs>();
 
   for (const doc of docs) {
@@ -159,10 +161,61 @@ async function ensureSortOrders(projectId: number): Promise<void> {
 export async function getTasks(projectId: number): Promise<Task[]> {
   await connectDB();
   await ensureSortOrders(projectId);
-  const docs = await TaskModel.find({ projectId })
+  const docs = await TaskModel.find({ projectId, archived: { $ne: true } })
     .sort({ sortOrder: 1, taskId: 1 })
     .lean();
   return docs.map((doc) => serializeTask(doc));
+}
+
+export async function getArchivedTasks(projectId: number): Promise<Task[]> {
+  await connectDB();
+  const docs = await TaskModel.find({ projectId, archived: true })
+    .sort({ sortOrder: 1, taskId: 1 })
+    .lean();
+  return docs.map((doc) => serializeTask(doc));
+}
+
+export async function setTasksArchived(
+  projectId: number,
+  taskIds: number[],
+  archived: boolean
+): Promise<{ tasks: Task[]; archivedTasks: Task[] }> {
+  await connectDB();
+
+  if (!Array.isArray(taskIds) || taskIds.length === 0) {
+    throw new Error("taskIds is required");
+  }
+
+  const uniqueIds = Array.from(new Set(taskIds.filter((id) => Number.isInteger(id))));
+  const idsToUpdate = new Set<number>();
+
+  for (const taskId of uniqueIds) {
+    const task = await getTaskInProject(taskId, projectId);
+    if (!task) {
+      continue;
+    }
+
+    idsToUpdate.add(task.taskId);
+
+    if (task.parentTaskId == null) {
+      const children = await TaskModel.find({ projectId, parentTaskId: task.taskId }).lean();
+      for (const child of children) {
+        idsToUpdate.add(child.taskId);
+      }
+    }
+  }
+
+  if (idsToUpdate.size > 0) {
+    await TaskModel.updateMany(
+      { projectId, taskId: { $in: Array.from(idsToUpdate) } },
+      { archived }
+    );
+  }
+
+  const tasks = await getTasks(projectId);
+  const archivedTasks = await getArchivedTasks(projectId);
+
+  return { tasks, archivedTasks };
 }
 
 export async function reorderTasks(

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseProjectIdParam } from "@/lib/activeProject";
 import { getAuthenticatedUser, requireAdmin, requireAuth } from "@/lib/auth";
 import { requireProjectAccess } from "@/lib/projectAccess";
-import { createTask, getTasks, validateTaskCreateInput } from "@/lib/tasks";
+import { createTask, getArchivedTasks, getTasks, validateTaskCreateInput } from "@/lib/tasks";
 import { TaskCreatePayload, TaskPriority } from "@/lib/types";
 
 function getProjectIdFromRequest(request: NextRequest, bodyProjectId?: unknown): number | null {
@@ -40,7 +40,8 @@ export async function GET(request: NextRequest) {
       return accessError;
     }
 
-    const tasks = await getTasks(projectId);
+    const archivedOnly = request.nextUrl.searchParams.get("archived") === "1";
+    const tasks = archivedOnly ? await getArchivedTasks(projectId) : await getTasks(projectId);
     return NextResponse.json({ tasks });
   } catch (error) {
     console.error("GET /api/tasks failed:", error);

@@ -12,6 +12,7 @@ Built with Next.js 14, React 18, TypeScript, Tailwind CSS, and MongoDB (Mongoose
 - **Tasks and subtasks** — Title, priority (critical / high / medium / low), status (waiting / in progress / done), optional פירוט, and personal notes. Subtasks nest under a parent task.
 - **Table and cards** — Desktop uses a resizable table; phones use a card list. Same filters and data in both views.
 - **Search and filters** — Search by title, פירוט, or task ID. Filter by priority and status.
+- **Archive** — Admins can archive selected tasks. Archived tasks leave the board and can be viewed or restored from the archive button next to the filters.
 - **Progress** — Dashboard cards show open tasks by priority and overall completion.
 - **Custom columns** — Admins can add extra fields per board (text, number, date, or link).
 - **Import / export** — Admins can import and export tasks as JSON, including bulk select and delete.

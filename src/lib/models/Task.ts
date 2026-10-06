@@ -11,6 +11,7 @@ export interface ITaskDocument extends Document {
   status: TaskStatus;
   completed?: boolean;
   notes: string;
+  archived?: boolean;
   parentTaskId?: number | null;
   sortOrder?: number;
   customFields?: Record<string, string>;
@@ -54,6 +55,10 @@ const TaskSchema = new Schema<ITaskDocument>(
     notes: {
       type: String,
       default: "",
+    },
+    archived: {
+      type: Boolean,
+      default: false,
     },
     parentTaskId: {
       type: Number,

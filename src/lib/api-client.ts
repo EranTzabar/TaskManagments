@@ -328,6 +328,43 @@ export async function fetchTasks(projectId: number): Promise<Task[]> {
   return data.tasks;
 }
 
+export async function fetchArchivedTasks(projectId: number): Promise<Task[]> {
+  const response = await fetch(withProjectId("/api/tasks?archived=1", projectId), {
+    cache: "no-store",
+    ...fetchOptions,
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch archived tasks");
+  }
+  const data = (await response.json()) as { tasks: Task[] };
+  return data.tasks;
+}
+
+export async function setTasksArchivedApi(
+  projectId: number,
+  taskIds: number[],
+  archived: boolean
+): Promise<{ tasks: Task[]; archivedTasks: Task[] }> {
+  const response = await fetch(withProjectId("/api/tasks/archive", projectId), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ taskIds, archived }),
+    ...fetchOptions,
+  });
+
+  const data = (await response.json().catch(() => ({}))) as {
+    tasks?: Task[];
+    archivedTasks?: Task[];
+    error?: string;
+  };
+
+  if (!response.ok || !data.tasks || !data.archivedTasks) {
+    throw new CreateTaskError(data.error ?? "Failed to update archive", response.status);
+  }
+
+  return { tasks: data.tasks, archivedTasks: data.archivedTasks };
+}
+
 export async function patchTask(
   projectId: number,
   taskId: number,

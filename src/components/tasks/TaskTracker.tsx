@@ -15,11 +15,13 @@ import {
   deleteTaskApi,
   fetchCustomColumns,
   fetchBoardNotes,
+  fetchArchivedTasks,
   fetchTasks,
   importTasksApi,
   patchTask,
   reorderCustomColumnsApi,
   reorderTasksApi,
+  setTasksArchivedApi,
   updateProjectApi,
 } from "@/lib/api-client";
 import { exportTasksToJsonFile } from "@/lib/taskExport";
@@ -39,6 +41,7 @@ import DeleteSelectedTasksModal from "./DeleteSelectedTasksModal";
 import DeleteTaskModal from "./DeleteTaskModal";
 import EditTaskFieldModal, { TaskEditableField } from "./EditTaskFieldModal";
 import ImportTasksModal, { ImportTasksFormValues } from "./ImportTasksModal";
+import ArchivedTasksPanel from "./ArchivedTasksPanel";
 import FiltersBar from "./FiltersBar";
 import MetricsDashboard from "./MetricsDashboard";
 import TaskCards from "./TaskCards";
@@ -112,6 +115,11 @@ export default function TaskTracker({
     () => new Set()
   );
   const [deleteSelectedOpen, setDeleteSelectedOpen] = useState(false);
+  const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [restoringTaskId, setRestoringTaskId] = useState<number | null>(null);
+  const [archivedTasksToDelete, setArchivedTasksToDelete] = useState<Task[]>([]);
   const [addTaskExpanded, setAddTaskExpanded] = useState(false);
   const [loading, setLoading] = useState(initialTasks.length === 0);
   const [boardNotesCount, setBoardNotesCount] = useState(initialBoardNotesCount);
@@ -168,6 +176,7 @@ export default function TaskTracker({
     setSearchQuery("");
     setFilterPriority("all");
     setFilterStatus("all");
+    setArchiveOpen(false);
   }, []);
 
   const refreshTasks = useCallback(async (projectId = activeProjectId) => {
@@ -526,6 +535,119 @@ export default function TaskTracker({
 
     showToast("פרטים נסגרו עבור המשימות שנבחרו", "info");
   }, [selectedSubtaskParents, showToast]);
+
+  const archivedParentCount = useMemo(
+    () => getTopLevelTasks(archivedTasks).length,
+    [archivedTasks]
+  );
+
+  const refreshArchivedTasks = useCallback(
+    async (projectId = activeProjectId) => {
+      try {
+        const nextArchived = await fetchArchivedTasks(projectId);
+        setArchivedTasks(nextArchived);
+      } catch {
+        setArchivedTasks([]);
+      }
+    },
+    [activeProjectId]
+  );
+
+  useEffect(() => {
+    void refreshArchivedTasks(activeProjectId);
+  }, [activeProjectId, refreshArchivedTasks]);
+
+  const handleArchiveSelected = useCallback(async () => {
+    const selectedIds = Array.from(selectedSubtaskParents);
+    if (selectedIds.length === 0 || archiving) {
+      return;
+    }
+
+    setArchiving(true);
+    try {
+      const result = await setTasksArchivedApi(activeProjectId, selectedIds, true);
+      setTasks(result.tasks);
+      setArchivedTasks(result.archivedTasks);
+      setSelectedSubtaskParents(new Set());
+      setExpandedTaskId((current) =>
+        current != null && selectedIds.includes(current) ? null : current
+      );
+      setExpandedSubtaskParents((current) => {
+        const next = new Set(current);
+        for (const taskId of selectedIds) {
+          next.delete(taskId);
+        }
+        return next;
+      });
+      showToast(`${selectedIds.length} משימות הועברו לארכיון`, "success");
+    } catch (error) {
+      if (error instanceof CreateTaskError && error.status === 403) {
+        showToast("אין הרשאה לבצע פעולה זו", "error");
+        return;
+      }
+
+      showToast(error instanceof Error ? error.message : "שגיאה בהעברה לארכיון", "error");
+    } finally {
+      setArchiving(false);
+    }
+  }, [activeProjectId, archiving, selectedSubtaskParents, showToast]);
+
+  const handleRestoreTask = useCallback(
+    async (taskId: number) => {
+      if (restoringTaskId != null) {
+        return;
+      }
+
+      setRestoringTaskId(taskId);
+      try {
+        const result = await setTasksArchivedApi(activeProjectId, [taskId], false);
+        setTasks(result.tasks);
+        setArchivedTasks(result.archivedTasks);
+        showToast(`משימה ${taskId} שוחזרה`, "success");
+      } catch (error) {
+        if (error instanceof CreateTaskError && error.status === 403) {
+          showToast("אין הרשאה לבצע פעולה זו", "error");
+          return;
+        }
+
+        showToast(error instanceof Error ? error.message : "שגיאה בשחזור המשימה", "error");
+      } finally {
+        setRestoringTaskId(null);
+      }
+    },
+    [activeProjectId, restoringTaskId, showToast]
+  );
+
+  const handleDeleteArchivedTasks = useCallback(async () => {
+    if (archivedTasksToDelete.length === 0) {
+      return;
+    }
+
+    try {
+      const allDeletedIds: number[] = [];
+
+      for (const task of archivedTasksToDelete) {
+        const { deletedTaskIds } = await deleteTaskApi(activeProjectId, task.taskId);
+        allDeletedIds.push(...deletedTaskIds);
+      }
+
+      setArchivedTasks((current) =>
+        current.filter((task) => !allDeletedIds.includes(task.taskId))
+      );
+      setArchivedTasksToDelete([]);
+      showToast(`${archivedTasksToDelete.length} משימות נמחקו מהארכיון`, "success");
+    } catch (error) {
+      if (error instanceof CreateTaskError && error.status === 403) {
+        throw new Error("אין הרשאה לבצע פעולה זו");
+      }
+
+      if (error instanceof CreateTaskError && error.message) {
+        throw new Error(error.message);
+      }
+
+      throw new Error("שגיאה במחיקת המשימות");
+    }
+  }, [activeProjectId, archivedTasksToDelete, showToast]);
 
   const handleDeleteSelectedRequest = useCallback(() => {
     if (selectedSubtaskParents.size === 0) {
@@ -1029,7 +1151,7 @@ export default function TaskTracker({
 
             {totalCount > 0 ? <MetricsDashboard tasks={topLevelTasks} /> : null}
 
-            {totalCount > 0 ? (
+            {totalCount > 0 || archivedParentCount > 0 ? (
               <FiltersBar
                 totalCount={totalCount}
                 filteredCount={filteredTasks.length}
@@ -1040,6 +1162,19 @@ export default function TaskTracker({
                 onPriorityChange={setFilterPriority}
                 onStatusChange={setFilterStatus}
                 onResetFilters={handleResetFilters}
+                archivedCount={archivedParentCount}
+                archiveOpen={archiveOpen}
+                onToggleArchive={() => setArchiveOpen((open) => !open)}
+              />
+            ) : null}
+
+            {archiveOpen ? (
+              <ArchivedTasksPanel
+                tasks={archivedTasks}
+                isAdmin={isAdmin}
+                restoringTaskId={restoringTaskId}
+                onRestore={(taskId) => void handleRestoreTask(taskId)}
+                onDeleteSelected={setArchivedTasksToDelete}
               />
             ) : null}
 
@@ -1081,11 +1216,13 @@ export default function TaskTracker({
                     someSelected={someSubtaskParentsSelected}
                     selectedCount={selectedSubtaskParents.size}
                     showDelete={isAdmin}
+                    showArchive={isAdmin}
                     showSelectAll={visibleSelectableParentTasks.length > 0}
                     showImportExportMenu={isAdmin}
                     canExport={tasks.length > 0}
                     onSelectAll={handleSelectAllSubtaskParents}
                     onCloseAll={handleCloseAllSubtasks}
+                    onArchiveSelected={() => void handleArchiveSelected()}
                     onDeleteSelected={handleDeleteSelectedRequest}
                     onExport={handleExportTasks}
                     onImportFromFile={openImportFilePicker}
@@ -1212,6 +1349,13 @@ export default function TaskTracker({
         tasks={selectedTasksForDelete}
         onClose={() => setDeleteSelectedOpen(false)}
         onSubmit={handleDeleteSelectedTasks}
+      />
+
+      <DeleteSelectedTasksModal
+        open={archivedTasksToDelete.length > 0}
+        tasks={archivedTasksToDelete}
+        onClose={() => setArchivedTasksToDelete([])}
+        onSubmit={handleDeleteArchivedTasks}
       />
 
       <EditTaskFieldModal

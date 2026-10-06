@@ -13,6 +13,9 @@ interface FiltersBarProps {
   onPriorityChange: (value: TaskPriority | "all") => void;
   onStatusChange: (value: FilterStatus) => void;
   onResetFilters: () => void;
+  archivedCount: number;
+  archiveOpen: boolean;
+  onToggleArchive: () => void;
 }
 
 export default function FiltersBar({
@@ -25,6 +28,9 @@ export default function FiltersBar({
   onPriorityChange,
   onStatusChange,
   onResetFilters,
+  archivedCount,
+  archiveOpen,
+  onToggleArchive,
 }: FiltersBarProps) {
   const statusButtonClass = (status: FilterStatus) =>
     filterStatus === status
@@ -103,13 +109,27 @@ export default function FiltersBar({
           <span className="font-bold text-slate-700 dark:text-white">{filteredCount}</span>{" "}
           מתוך <span className="font-bold">{totalCount}</span> משימות
         </div>
-        <button
-          type="button"
-          onClick={onResetFilters}
-          className="text-indigo-600 hover:underline dark:text-indigo-400 font-medium transition"
-        >
-          אפס סינונים
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onToggleArchive}
+            aria-expanded={archiveOpen}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition ${
+              archiveOpen
+                ? "text-white bg-indigo-600 border-indigo-600"
+                : "text-slate-700 bg-slate-50 border-slate-200 hover:bg-slate-100 dark:text-slate-200 dark:bg-slate-900 dark:border-slate-600 dark:hover:bg-slate-700"
+            }`}
+          >
+            הצג ארכיון{archivedCount > 0 ? ` (${archivedCount})` : ""}
+          </button>
+          <button
+            type="button"
+            onClick={onResetFilters}
+            className="text-indigo-600 hover:underline dark:text-indigo-400 font-medium transition"
+          >
+            אפס סינונים
+          </button>
+        </div>
       </div>
     </section>
   );

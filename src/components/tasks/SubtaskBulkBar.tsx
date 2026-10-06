@@ -8,11 +8,13 @@ interface SubtaskBulkBarProps {
   someSelected: boolean;
   selectedCount: number;
   showDelete?: boolean;
+  showArchive?: boolean;
   showSelectAll?: boolean;
   showImportExportMenu?: boolean;
   canExport?: boolean;
   onSelectAll: (selected: boolean) => void;
   onCloseAll: () => void;
+  onArchiveSelected?: () => void;
   onDeleteSelected: () => void;
   onExport?: () => void;
   onImportFromFile?: () => void;
@@ -25,11 +27,13 @@ export default function SubtaskBulkBar({
   someSelected,
   selectedCount,
   showDelete = false,
+  showArchive = false,
   showSelectAll = true,
   showImportExportMenu = false,
   canExport = true,
   onSelectAll,
   onCloseAll,
+  onArchiveSelected,
   onDeleteSelected,
   onExport,
   onImportFromFile,
@@ -162,6 +166,15 @@ export default function SubtaskBulkBar({
           >
             סגור הכל
           </button>
+          {showArchive ? (
+            <button
+              type="button"
+              onClick={onArchiveSelected}
+              className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition dark:text-slate-200 dark:bg-slate-900 dark:hover:bg-slate-700 dark:border-slate-600"
+            >
+              ארכיון
+            </button>
+          ) : null}
           {showDelete ? (
             <button
               type="button"

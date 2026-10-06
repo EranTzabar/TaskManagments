@@ -114,6 +114,7 @@ export interface Task {
   details: string;
   status: TaskStatus;
   notes: string;
+  archived?: boolean;
   parentTaskId?: number | null;
   sortOrder?: number;
   customFields?: Record<string, string>;
