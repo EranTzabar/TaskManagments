@@ -4,6 +4,7 @@ import { getAuthenticatedUserFromCookies } from "@/lib/auth";
 import { getBoardNotes } from "@/lib/boardNotes";
 import { getProjectsForUser, userHasProjectAccess } from "@/lib/projectAccess";
 import { getProjectById, resolveActiveProjectId } from "@/lib/projects";
+import { getSessionUser } from "@/lib/users";
 import { BoardNote, Project } from "@/lib/types";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -67,7 +68,7 @@ export default async function NotesPage({
 
   return (
     <BoardNotesPage
-      user={{ username: user.username, role: user.role }}
+      user={await getSessionUser(user)}
       project={project}
       initialNotes={notes}
     />

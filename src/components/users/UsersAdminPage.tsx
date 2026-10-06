@@ -105,6 +105,9 @@ export default function UsersAdminPage({
           role?: UserListItem["role"];
           password?: string;
           allowedProjectIds?: number[];
+          canCreateTasks?: boolean;
+          canDeleteTasks?: boolean;
+          canArchiveTasks?: boolean;
         } = {};
         const existing = users.find((item) => item.id === userId);
 
@@ -122,6 +125,16 @@ export default function UsersAdminPage({
 
         const nextRole = values.role;
         if (nextRole !== "admin") {
+          if (values.canCreateTasks !== existing.canCreateTasks) {
+            payload.canCreateTasks = values.canCreateTasks;
+          }
+          if (values.canDeleteTasks !== existing.canDeleteTasks) {
+            payload.canDeleteTasks = values.canDeleteTasks;
+          }
+          if (values.canArchiveTasks !== existing.canArchiveTasks) {
+            payload.canArchiveTasks = values.canArchiveTasks;
+          }
+
           const existingIds =
             existing.allowedProjectIds ?? projects.map((project) => project.projectId);
           const sortedExisting = [...existingIds].sort((a, b) => a - b);
@@ -132,7 +145,14 @@ export default function UsersAdminPage({
           }
         }
 
-        if (!payload.role && !payload.password && payload.allowedProjectIds === undefined) {
+        if (
+          !payload.role &&
+          !payload.password &&
+          payload.allowedProjectIds === undefined &&
+          payload.canCreateTasks === undefined &&
+          payload.canDeleteTasks === undefined &&
+          payload.canArchiveTasks === undefined
+        ) {
           throw new Error("לא בוצעו שינויים");
         }
 

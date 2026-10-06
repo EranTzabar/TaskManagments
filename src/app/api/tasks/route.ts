@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseProjectIdParam } from "@/lib/activeProject";
-import { getAuthenticatedUser, requireAdmin, requireAuth } from "@/lib/auth";
+import { getAuthenticatedUser, requireAuth } from "@/lib/auth";
 import { requireProjectAccess } from "@/lib/projectAccess";
 import { createTask, getArchivedTasks, getTasks, validateTaskCreateInput } from "@/lib/tasks";
+import { userHasTaskPermission } from "@/lib/users";
 import { TaskCreatePayload, TaskPriority } from "@/lib/types";
 
 function getProjectIdFromRequest(request: NextRequest, bodyProjectId?: unknown): number | null {
@@ -55,15 +56,24 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser(request);
-    const adminError = requireAdmin(user);
-    if (adminError) {
-      return adminError;
+    const authError = requireAuth(user);
+    if (authError) {
+      return authError;
     }
 
     const body = (await request.json()) as TaskCreatePayload & { projectId?: number };
     const projectId = getProjectIdFromRequest(request, body.projectId);
     if (projectId == null) {
       return NextResponse.json({ error: "projectId is required" }, { status: 400 });
+    }
+
+    const accessError = await requireProjectAccess(user, projectId);
+    if (accessError) {
+      return accessError;
+    }
+
+    if (!(await userHasTaskPermission(user!, "canCreateTasks"))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const validation = validateTaskCreateInput({

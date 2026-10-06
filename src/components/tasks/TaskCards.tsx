@@ -28,6 +28,7 @@ interface TaskCardsProps {
   tasks: Task[];
   allTasks: Task[];
   readOnly?: boolean;
+  canDelete?: boolean;
   isAdmin?: boolean;
   canReorder?: boolean;
   expandedTaskId: number | null;
@@ -80,6 +81,7 @@ export default function TaskCards({
   tasks,
   allTasks,
   readOnly = false,
+  canDelete = false,
   isAdmin = false,
   canReorder = false,
   expandedTaskId,
@@ -133,6 +135,7 @@ export default function TaskCards({
     const cardProps = {
       isExpanded: expandedTaskId === task.taskId,
       readOnly,
+      canDelete,
       statusDisabled: taskHasSubtasks(allTasks, task.taskId),
       subtasks,
       subtasksVisible: isSubtasksVisible(task.taskId),
@@ -169,7 +172,7 @@ export default function TaskCards({
       ) : (
         cards
       )}
-      {isAdmin && onAddTask && onAddTaskExpandedChange ? (
+      {onAddTask && onAddTaskExpandedChange ? (
         <AddTaskMobileBar
           expanded={addTaskExpanded}
           onExpandedChange={onAddTaskExpandedChange}

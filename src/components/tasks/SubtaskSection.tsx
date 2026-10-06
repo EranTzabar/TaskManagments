@@ -40,6 +40,7 @@ interface SubtaskSectionProps {
   customColumns?: CustomColumn[];
   totalColumnCount?: number;
   readOnly?: boolean;
+  canDelete?: boolean;
   canReorder?: boolean;
   expandedTaskId: number | null;
   onToggleExpand: (taskId: number) => void;
@@ -83,6 +84,7 @@ function SubtaskDeleteButton({
 interface SubtaskRowProps {
   subtask: Task;
   readOnly: boolean;
+  canDelete?: boolean;
   isExpanded: boolean;
   showDragHandle: boolean;
   rowRef?: Ref<HTMLTableRowElement>;
@@ -107,6 +109,7 @@ interface SubtaskRowProps {
 function SubtaskRow({
   subtask,
   readOnly,
+  canDelete = false,
   isExpanded,
   showDragHandle,
   rowRef,
@@ -210,7 +213,7 @@ function SubtaskRow({
               <NoteIcon filled={notesSet} className="w-3 h-3" />
               {isExpanded ? "סגור" : "פרטים"}
             </button>
-            {!readOnly ? (
+            {!readOnly || canDelete ? (
               <SubtaskDeleteButton task={subtask} onDeleteRequest={onDeleteRequest} />
             ) : null}
           </div>
@@ -275,6 +278,7 @@ export default function SubtaskSection({
   customColumns = [],
   totalColumnCount = 6,
   readOnly = false,
+  canDelete = false,
   canReorder = false,
   expandedTaskId,
   onToggleExpand,
@@ -339,6 +343,7 @@ export default function SubtaskSection({
     const rowProps: SubtaskRowProps = {
       subtask,
       readOnly,
+      canDelete,
       isExpanded: expandedTaskId === subtask.taskId,
       showDragHandle,
       onToggleExpand,

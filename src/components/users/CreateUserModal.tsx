@@ -1,16 +1,23 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Project, UserRole } from "@/lib/types";
+import { Project, UserRole, UserTaskPermissions } from "@/lib/types";
 import {
   PASSWORD_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
+import UserActionPermissions from "./UserActionPermissions";
 import UserBoardPermissions from "./UserBoardPermissions";
 
-export interface CreateUserFormValues {
+const emptyTaskPermissions: UserTaskPermissions = {
+  canCreateTasks: false,
+  canDeleteTasks: false,
+  canArchiveTasks: false,
+};
+
+export interface CreateUserFormValues extends UserTaskPermissions {
   username: string;
   password: string;
   role: UserRole;
@@ -34,6 +41,7 @@ export default function CreateUserModal({
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("user");
   const [allowedProjectIds, setAllowedProjectIds] = useState<number[]>([]);
+  const [taskPermissions, setTaskPermissions] = useState<UserTaskPermissions>(emptyTaskPermissions);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,6 +51,7 @@ export default function CreateUserModal({
       setPassword("");
       setRole("user");
       setAllowedProjectIds([]);
+      setTaskPermissions(emptyTaskPermissions);
       setError(null);
     }
   }, [open]);
@@ -61,11 +70,12 @@ export default function CreateUserModal({
     setSubmitting(true);
 
     try {
-      await onSubmit({ username, password, role, allowedProjectIds });
+      await onSubmit({ username, password, role, allowedProjectIds, ...taskPermissions });
       setUsername("");
       setPassword("");
       setRole("user");
       setAllowedProjectIds([]);
+      setTaskPermissions(emptyTaskPermissions);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "שגיאה ביצירת המשתמש");
     } finally {
@@ -120,6 +130,12 @@ export default function CreateUserModal({
             <option value="admin">מנהל</option>
           </select>
         </label>
+
+        <UserActionPermissions
+          value={taskPermissions}
+          onChange={setTaskPermissions}
+          disabled={role === "admin"}
+        />
 
         <UserBoardPermissions
           projects={projects}

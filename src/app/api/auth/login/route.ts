@@ -3,6 +3,7 @@ import { setAuthCookie, signAuthToken } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import UserModel from "@/lib/models/User";
 import { verifyPassword } from "@/lib/password";
+import { getSessionUser } from "@/lib/users";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const token = await signAuthToken(authUser);
     const response = NextResponse.json({
-      user: { username: authUser.username, role: authUser.role },
+      user: await getSessionUser(authUser),
     });
     setAuthCookie(response, token);
     return response;

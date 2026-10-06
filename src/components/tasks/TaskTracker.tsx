@@ -91,6 +91,9 @@ export default function TaskTracker({
   const router = useRouter();
   const { showToast } = useToast();
   const isAdmin = user.role === "admin";
+  const canCreateTasks = isAdmin || user.canCreateTasks;
+  const canDeleteTasks = isAdmin || user.canDeleteTasks;
+  const canArchiveTasks = isAdmin || user.canArchiveTasks;
   const readOnly = !isAdmin;
 
   const [projects, setProjects] = useState<Project[]>(initialProjects);
@@ -1095,7 +1098,7 @@ export default function TaskTracker({
 
   const emptyBoard = !loading && totalCount === 0;
   const noFilterResults = !loading && totalCount > 0 && filteredTasks.length === 0;
-  const showTaskBoard = (isAdmin && emptyBoard) || (!emptyBoard && !noFilterResults);
+  const showTaskBoard = ((isAdmin || canCreateTasks) && emptyBoard) || (!emptyBoard && !noFilterResults);
 
   return (
     <div className="bg-slate-50 text-slate-800 min-h-screen flex flex-col transition-colors duration-300 dark:bg-slate-900 dark:text-slate-100">
@@ -1179,7 +1182,7 @@ export default function TaskTracker({
             ) : null}
 
             <section className="flex-1 flex flex-col">
-              {emptyBoard && !isAdmin ? (
+              {emptyBoard && !canCreateTasks ? (
                 <div className="flex flex-col items-center justify-center py-16 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl shadow-sm text-center">
                   <div className="w-16 h-16 text-slate-300 dark:text-slate-600 mb-3">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1215,8 +1218,8 @@ export default function TaskTracker({
                     allSelected={allSubtaskParentsSelected}
                     someSelected={someSubtaskParentsSelected}
                     selectedCount={selectedSubtaskParents.size}
-                    showDelete={isAdmin}
-                    showArchive={isAdmin}
+                    showDelete={canDeleteTasks}
+                    showArchive={canArchiveTasks}
                     showSelectAll={visibleSelectableParentTasks.length > 0}
                     showImportExportMenu={isAdmin}
                     canExport={tasks.length > 0}
@@ -1239,7 +1242,8 @@ export default function TaskTracker({
                     onNoteChange={handleNoteChange}
                     onPriorityChange={handlePriorityChange}
                     onStatusChange={handleStatusChange}
-                    onDeleteRequest={isAdmin ? handleDeleteRequest : () => {}}
+                    onDeleteRequest={canDeleteTasks ? handleDeleteRequest : () => {}}
+                    canDelete={canDeleteTasks}
                     onAddSubtaskRequest={handleAddSubtaskRequest}
                     onEditTitleRequest={handleEditTitleRequest}
                     onEditDetailsRequest={handleEditDetailsRequest}
@@ -1254,7 +1258,7 @@ export default function TaskTracker({
                     onAddCustomColumn={isAdmin ? handleAddCustomColumn : undefined}
                     onDeleteCustomColumn={isAdmin ? handleDeleteCustomColumn : undefined}
                     onReorderCustomColumns={isAdmin ? handleReorderCustomColumns : undefined}
-                    onAddTask={isAdmin ? handleAddTask : undefined}
+                    onAddTask={canCreateTasks ? handleAddTask : undefined}
                     addTaskExpanded={addTaskExpanded}
                     onAddTaskExpandedChange={setAddTaskExpanded}
                   />
@@ -1269,7 +1273,8 @@ export default function TaskTracker({
                     onNoteChange={handleNoteChange}
                     onPriorityChange={handlePriorityChange}
                     onStatusChange={handleStatusChange}
-                    onDeleteRequest={isAdmin ? handleDeleteRequest : () => {}}
+                    onDeleteRequest={canDeleteTasks ? handleDeleteRequest : () => {}}
+                    canDelete={canDeleteTasks}
                     onAddSubtaskRequest={handleAddSubtaskRequest}
                     onEditTitleRequest={handleEditTitleRequest}
                     onEditDetailsRequest={handleEditDetailsRequest}
@@ -1279,7 +1284,7 @@ export default function TaskTracker({
                     selectedSubtaskParents={selectedSubtaskParents}
                     onSelectSubtaskParent={handleSelectSubtaskParent}
                     showSubtaskSelection={visibleSelectableParentTasks.length > 0}
-                    onAddTask={isAdmin ? handleAddTask : undefined}
+                    onAddTask={canCreateTasks ? handleAddTask : undefined}
                     addTaskExpanded={addTaskExpanded}
                     onAddTaskExpandedChange={setAddTaskExpanded}
                   />

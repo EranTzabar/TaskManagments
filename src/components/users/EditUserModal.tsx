@@ -1,12 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Project, UserListItem, UserRole } from "@/lib/types";
+import { Project, UserListItem, UserRole, UserTaskPermissions } from "@/lib/types";
 import { PASSWORD_MIN_LENGTH } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
+import UserActionPermissions from "./UserActionPermissions";
 import UserBoardPermissions from "./UserBoardPermissions";
 
-export interface EditUserFormValues {
+export interface EditUserFormValues extends UserTaskPermissions {
   role: UserRole;
   password: string;
   allowedProjectIds: number[];
@@ -30,6 +31,11 @@ export default function EditUserModal({
   const [role, setRole] = useState<UserRole>("user");
   const [password, setPassword] = useState("");
   const [allowedProjectIds, setAllowedProjectIds] = useState<number[]>([]);
+  const [taskPermissions, setTaskPermissions] = useState<UserTaskPermissions>({
+    canCreateTasks: false,
+    canDeleteTasks: false,
+    canArchiveTasks: false,
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,6 +44,11 @@ export default function EditUserModal({
       setRole(user.role);
       setPassword("");
       setAllowedProjectIds(user.allowedProjectIds ?? projects.map((project) => project.projectId));
+      setTaskPermissions({
+        canCreateTasks: user.canCreateTasks,
+        canDeleteTasks: user.canDeleteTasks,
+        canArchiveTasks: user.canArchiveTasks,
+      });
       setError(null);
     }
   }, [open, projects, user]);
@@ -60,7 +71,7 @@ export default function EditUserModal({
     setSubmitting(true);
 
     try {
-      await onSubmit(user.id, { role, password, allowedProjectIds });
+      await onSubmit(user.id, { role, password, allowedProjectIds, ...taskPermissions });
       setPassword("");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "שגיאה בעדכון המשתמש");
@@ -106,6 +117,12 @@ export default function EditUserModal({
             className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </label>
+
+        <UserActionPermissions
+          value={taskPermissions}
+          onChange={setTaskPermissions}
+          disabled={role === "admin"}
+        />
 
         <UserBoardPermissions
           projects={projects}

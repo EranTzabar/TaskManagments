@@ -7,6 +7,7 @@ import { getProjectsForUser } from "@/lib/projectAccess";
 import { resolveActiveProjectId } from "@/lib/projects";
 import { getBoardNotes } from "@/lib/boardNotes";
 import { getTasks } from "@/lib/tasks";
+import { getSessionUser } from "@/lib/users";
 import { Project, Task } from "@/lib/types";
 import { cookies } from "next/headers";
 
@@ -31,8 +32,10 @@ export default async function Home({
     console.error("Failed to load projects:", error);
   }
 
+  const sessionUser = await getSessionUser(user);
+
   if (projects.length === 0) {
-    return <EmptyProjectsPage user={{ username: user.username, role: user.role }} />;
+    return <EmptyProjectsPage user={sessionUser} />;
   }
 
   const activeProjectId = resolveActiveProjectId(
@@ -41,7 +44,7 @@ export default async function Home({
   );
 
   if (activeProjectId == null) {
-    return <EmptyProjectsPage user={{ username: user.username, role: user.role }} />;
+    return <EmptyProjectsPage user={sessionUser} />;
   }
 
   let tasks: Task[] = [];
@@ -62,7 +65,7 @@ export default async function Home({
       initialProjects={projects}
       activeProjectId={activeProjectId}
       initialBoardNotesCount={boardNotesCount}
-      user={{ username: user.username, role: user.role }}
+      user={sessionUser}
     />
   );
 }

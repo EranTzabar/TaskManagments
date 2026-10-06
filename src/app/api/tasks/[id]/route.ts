@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseProjectIdParam } from "@/lib/activeProject";
-import { getAuthenticatedUser, requireAdmin } from "@/lib/auth";
+import { getAuthenticatedUser, requireAdmin, requireAuth } from "@/lib/auth";
+import { requireProjectAccess } from "@/lib/projectAccess";
 import { deleteTask, updateTask } from "@/lib/tasks";
+import { userHasTaskPermission } from "@/lib/users";
 import { TaskUpdatePayload } from "@/lib/types";
 
 interface RouteParams {
@@ -70,14 +72,23 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getAuthenticatedUser(request);
-    const adminError = requireAdmin(user);
-    if (adminError) {
-      return adminError;
+    const authError = requireAuth(user);
+    if (authError) {
+      return authError;
     }
 
     const projectId = getProjectIdFromRequest(request);
     if (projectId == null) {
       return NextResponse.json({ error: "projectId is required" }, { status: 400 });
+    }
+
+    const accessError = await requireProjectAccess(user, projectId);
+    if (accessError) {
+      return accessError;
+    }
+
+    if (!(await userHasTaskPermission(user!, "canDeleteTasks"))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const taskId = Number(params.id);

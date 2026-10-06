@@ -5,6 +5,9 @@ export interface IUserDocument extends Document {
   username: string;
   passwordHash: string;
   role: UserRole;
+  canCreateTasks?: boolean;
+  canDeleteTasks?: boolean;
+  canArchiveTasks?: boolean;
   allowedProjectIds?: number[] | null;
   createdAt: Date;
   updatedAt: Date;
@@ -27,6 +30,18 @@ const UserSchema = new Schema<IUserDocument>(
       type: String,
       enum: ["admin", "user"],
       required: true,
+    },
+    canCreateTasks: {
+      type: Boolean,
+      default: false,
+    },
+    canDeleteTasks: {
+      type: Boolean,
+      default: false,
+    },
+    canArchiveTasks: {
+      type: Boolean,
+      default: false,
     },
     allowedProjectIds: {
       type: [Number],

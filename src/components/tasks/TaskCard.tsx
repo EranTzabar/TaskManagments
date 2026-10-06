@@ -21,6 +21,7 @@ interface TaskCardProps {
   task: Task;
   isExpanded: boolean;
   readOnly?: boolean;
+  canDelete?: boolean;
   statusDisabled?: boolean;
   subtasks?: Task[];
   subtasksVisible?: boolean;
@@ -51,6 +52,7 @@ export default function TaskCard({
   task,
   isExpanded,
   readOnly = false,
+  canDelete = false,
   statusDisabled = false,
   subtasks = [],
   subtasksVisible = false,
@@ -207,7 +209,7 @@ export default function TaskCard({
           <NoteIcon filled={notesSet} />
           {isExpanded ? "סגור פרטים" : "פרטים והערות"}
         </button>
-        {!readOnly ? (
+        {!readOnly || canDelete ? (
           <button
             type="button"
             onClick={() => onDeleteRequest(task)}

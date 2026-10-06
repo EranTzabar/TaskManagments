@@ -12,12 +12,18 @@ export interface AuthUser {
   role: UserRole;
 }
 
-export interface SessionUser {
+export interface UserTaskPermissions {
+  canCreateTasks: boolean;
+  canDeleteTasks: boolean;
+  canArchiveTasks: boolean;
+}
+
+export interface SessionUser extends UserTaskPermissions {
   username: string;
   role: UserRole;
 }
 
-export interface UserListItem {
+export interface UserListItem extends UserTaskPermissions {
   id: string;
   username: string;
   role: UserRole;
@@ -26,14 +32,14 @@ export interface UserListItem {
   updatedAt: string;
 }
 
-export interface UserCreatePayload {
+export interface UserCreatePayload extends UserTaskPermissions {
   username: string;
   password: string;
   role: UserRole;
   allowedProjectIds?: number[];
 }
 
-export interface UserUpdatePayload {
+export interface UserUpdatePayload extends Partial<UserTaskPermissions> {
   role?: UserRole;
   password?: string;
   allowedProjectIds?: number[] | null;

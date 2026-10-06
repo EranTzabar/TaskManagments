@@ -40,6 +40,7 @@ interface TaskTableProps {
   tasks: Task[];
   allTasks: Task[];
   readOnly?: boolean;
+  canDelete?: boolean;
   isAdmin?: boolean;
   canReorder?: boolean;
   expandedTaskId: number | null;
@@ -99,6 +100,7 @@ export default function TaskTable({
   tasks,
   allTasks,
   readOnly = false,
+  canDelete = false,
   isAdmin = false,
   canReorder = false,
   expandedTaskId,
@@ -136,7 +138,7 @@ export default function TaskTable({
   const columnIds = useMemo(() => customColumns.map((column) => column.columnId), [customColumns]);
   const showDragHandle = canReorder && isAdmin;
   const canReorderColumns = isAdmin && !!onReorderCustomColumns && customColumns.length > 1;
-  const showAddTaskRow = isAdmin && !!onAddTask;
+  const showAddTaskRow = !!onAddTask;
 
   useEffect(() => {
     if (!showAddTaskRow) {
@@ -227,6 +229,7 @@ export default function TaskTable({
         const rowProps: Omit<TaskRowProps, "task"> = {
           isExpanded,
           readOnly,
+          canDelete,
           statusDisabled: hasSubtasks,
           subtasks,
           subtasksVisible: subtasksOpen,
@@ -262,6 +265,7 @@ export default function TaskTable({
                 customColumns={customColumns}
                 totalColumnCount={totalColumnCount}
                 readOnly={readOnly}
+                canDelete={canDelete}
                 canReorder={showDragHandle}
                 expandedTaskId={expandedTaskId}
                 onToggleExpand={onToggleExpand}

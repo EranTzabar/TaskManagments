@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser, requireAuth } from "@/lib/auth";
+import { getSessionUser } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      user: { username: user!.username, role: user!.role },
+      user: await getSessionUser(user!),
     });
   } catch (error) {
     console.error("GET /api/auth/me failed:", error);

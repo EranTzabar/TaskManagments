@@ -5,17 +5,45 @@ import {
   normalizeAllowedProjectIds,
   validateAllowedProjectIds,
 } from "./projectAccess";
-import { UserCreatePayload, UserListItem, UserRole, UserUpdatePayload } from "./types";
+import {
+  AuthUser,
+  SessionUser,
+  UserCreatePayload,
+  UserListItem,
+  UserRole,
+  UserTaskPermissions,
+  UserUpdatePayload,
+} from "./types";
 import {
   PASSWORD_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "./utils";
 
+function readTaskPermissions(doc: {
+  role: UserRole;
+  canCreateTasks?: boolean;
+  canDeleteTasks?: boolean;
+  canArchiveTasks?: boolean;
+}): UserTaskPermissions {
+  if (doc.role === "admin") {
+    return { canCreateTasks: true, canDeleteTasks: true, canArchiveTasks: true };
+  }
+
+  return {
+    canCreateTasks: doc.canCreateTasks === true,
+    canDeleteTasks: doc.canDeleteTasks === true,
+    canArchiveTasks: doc.canArchiveTasks === true,
+  };
+}
+
 function serializeUser(doc: {
   _id: { toString(): string };
   username: string;
   role: UserRole;
+  canCreateTasks?: boolean;
+  canDeleteTasks?: boolean;
+  canArchiveTasks?: boolean;
   allowedProjectIds?: number[] | null;
   createdAt: Date;
   updatedAt: Date;
@@ -24,6 +52,7 @@ function serializeUser(doc: {
     id: doc._id.toString(),
     username: doc.username,
     role: doc.role,
+    ...readTaskPermissions(doc),
     allowedProjectIds:
       doc.allowedProjectIds == null
         ? null
@@ -75,6 +104,38 @@ async function countAdmins(): Promise<number> {
   return UserModel.countDocuments({ role: "admin" });
 }
 
+export async function getSessionUser(user: AuthUser): Promise<SessionUser> {
+  await connectDB();
+  const doc = await UserModel.findById(user.id)
+    .select("role canCreateTasks canDeleteTasks canArchiveTasks")
+    .lean();
+
+  const permissions = readTaskPermissions({
+    role: user.role,
+    canCreateTasks: doc?.canCreateTasks,
+    canDeleteTasks: doc?.canDeleteTasks,
+    canArchiveTasks: doc?.canArchiveTasks,
+  });
+
+  return {
+    username: user.username,
+    role: user.role,
+    ...permissions,
+  };
+}
+
+export async function userHasTaskPermission(
+  user: AuthUser,
+  permission: keyof UserTaskPermissions
+): Promise<boolean> {
+  if (user.role === "admin") {
+    return true;
+  }
+
+  const session = await getSessionUser(user);
+  return session[permission];
+}
+
 export async function getUsers(): Promise<UserListItem[]> {
   await connectDB();
   const docs = await UserModel.find().sort({ username: 1 }).lean();
@@ -83,6 +144,9 @@ export async function getUsers(): Promise<UserListItem[]> {
       _id: { toString: () => String(doc._id) },
       username: doc.username,
       role: doc.role as UserRole,
+      canCreateTasks: doc.canCreateTasks,
+      canDeleteTasks: doc.canDeleteTasks,
+      canArchiveTasks: doc.canArchiveTasks,
       allowedProjectIds: doc.allowedProjectIds ?? null,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
@@ -130,6 +194,9 @@ export async function createUser(payload: UserCreatePayload): Promise<UserListIt
     username,
     passwordHash,
     role: payload.role,
+    canCreateTasks: payload.role === "user" && payload.canCreateTasks === true,
+    canDeleteTasks: payload.role === "user" && payload.canDeleteTasks === true,
+    canArchiveTasks: payload.role === "user" && payload.canArchiveTasks === true,
     allowedProjectIds,
   });
 
@@ -144,8 +211,12 @@ export async function updateUser(
   const hasRole = payload.role !== undefined;
   const hasPassword = payload.password !== undefined && payload.password !== "";
   const hasAllowedProjectIds = payload.allowedProjectIds !== undefined;
+  const hasTaskPermissions =
+    payload.canCreateTasks !== undefined ||
+    payload.canDeleteTasks !== undefined ||
+    payload.canArchiveTasks !== undefined;
 
-  if (!hasRole && !hasPassword && !hasAllowedProjectIds) {
+  if (!hasRole && !hasPassword && !hasAllowedProjectIds && !hasTaskPermissions) {
     throw new Error("No changes provided");
   }
 
@@ -208,6 +279,18 @@ export async function updateUser(
     user.allowedProjectIds = null;
   } else if (hasRole && payload.role === "user" && user.allowedProjectIds == null) {
     user.allowedProjectIds = [];
+  }
+
+  if (nextRole === "user") {
+    if (payload.canCreateTasks !== undefined) {
+      user.canCreateTasks = payload.canCreateTasks;
+    }
+    if (payload.canDeleteTasks !== undefined) {
+      user.canDeleteTasks = payload.canDeleteTasks;
+    }
+    if (payload.canArchiveTasks !== undefined) {
+      user.canArchiveTasks = payload.canArchiveTasks;
+    }
   }
 
   await user.save();

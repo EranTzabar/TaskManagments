@@ -21,6 +21,7 @@ export interface TaskRowProps {
   task: Task;
   isExpanded: boolean;
   readOnly?: boolean;
+  canDelete?: boolean;
   statusDisabled?: boolean;
   subtasks?: Task[];
   subtasksVisible?: boolean;
@@ -73,6 +74,7 @@ export default function TaskRow({
   task,
   isExpanded,
   readOnly = false,
+  canDelete = false,
   statusDisabled = false,
   subtasks = [],
   subtasksVisible = false,
@@ -217,7 +219,7 @@ export default function TaskRow({
               <NoteIcon filled={notesSet} />
               {isExpanded ? "צמצם" : "פרטים"}
             </button>
-            {!readOnly ? (
+            {!readOnly || canDelete ? (
               <DeleteButton task={task} onDeleteRequest={onDeleteRequest} />
             ) : null}
           </div>

@@ -1,7 +1,7 @@
 import UsersAdminPage from "@/components/users/UsersAdminPage";
 import { getAuthenticatedUserFromCookies } from "@/lib/auth";
 import { getProjects } from "@/lib/projects";
-import { getUsers } from "@/lib/users";
+import { getSessionUser, getUsers } from "@/lib/users";
 import { Project, UserListItem } from "@/lib/types";
 import { redirect } from "next/navigation";
 
@@ -29,7 +29,7 @@ export default async function UsersPage() {
 
   return (
     <UsersAdminPage
-      user={{ username: user.username, role: user.role }}
+      user={await getSessionUser(user)}
       currentUserId={user.id}
       initialUsers={users}
       projects={projects}
