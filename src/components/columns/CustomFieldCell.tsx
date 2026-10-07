@@ -1,7 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CustomColumn, CustomColumnType } from "@/lib/types";
+import EditPencilButton from "@/components/ui/EditPencilButton";
 
 function normalizeLink(value: string): string {
   if (!value.trim()) {
@@ -124,6 +126,173 @@ function DateFieldCell({ value, onChange }: DateFieldCellProps) {
   );
 }
 
+function CopyLinkButton({ href }: { href: string }) {
+  const copy = () => {
+    void navigator.clipboard.writeText(href);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        copy();
+      }}
+      aria-label="העתק קישור"
+      title="העתק קישור"
+      className="shrink-0 p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-950/40 transition"
+    >
+      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+        />
+      </svg>
+    </button>
+  );
+}
+
+function LinkDisplay({ href, label }: { href: string; label: string }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLAnchorElement>(null);
+  const tooltipId = useId();
+
+  const updatePosition = () => {
+    const trigger = triggerRef.current;
+    if (!trigger) {
+      return;
+    }
+
+    const rect = trigger.getBoundingClientRect();
+    setPos({
+      top: rect.bottom + 8,
+      left: rect.right,
+    });
+  };
+
+  const showTooltip = () => {
+    updatePosition();
+    setOpen(true);
+  };
+
+  const hideTooltip = () => {
+    setOpen(false);
+  };
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleScroll = () => updatePosition();
+    window.addEventListener("resize", handleScroll);
+    window.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      window.removeEventListener("resize", handleScroll);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <a
+        ref={triggerRef}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onMouseEnter={showTooltip}
+        onMouseLeave={hideTooltip}
+        onFocus={showTooltip}
+        onBlur={hideTooltip}
+        aria-describedby={open ? tooltipId : undefined}
+        className="min-w-0 flex-1 truncate text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+      >
+        {label}
+      </a>
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              id={tooltipId}
+              role="tooltip"
+              className="pointer-events-none fixed z-[70] max-w-xs rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-xl dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+              style={{
+                top: pos.top,
+                left: pos.left,
+                transform: "translateX(-100%)",
+                maxWidth: "min(20rem, calc(100vw - 2rem))",
+              }}
+            >
+              <p className="break-all">{href}</p>
+            </div>,
+            document.body
+          )
+        : null}
+    </>
+  );
+}
+
+interface LinkFieldCellProps {
+  value: string;
+  readOnly?: boolean;
+  onChange: (value: string) => void;
+}
+
+function LinkFieldCell({ value, readOnly = false, onChange }: LinkFieldCellProps) {
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const href = normalizeLink(value);
+  const showEditor = !readOnly && (editing || !value.trim());
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+    }
+  }, [editing]);
+
+  const finishEditing = () => {
+    if (value.trim()) {
+      setEditing(false);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      finishEditing();
+    }
+  };
+
+  if (!showEditor && href) {
+    return (
+      <div className="flex min-w-0 items-center gap-0.5">
+        <LinkDisplay href={href} label={value} />
+        <CopyLinkButton href={href} />
+        {readOnly ? null : (
+          <EditPencilButton label="ערוך קישור" onClick={() => setEditing(true)} />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <input
+      ref={inputRef}
+      type="url"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      onBlur={finishEditing}
+      onKeyDown={handleKeyDown}
+      placeholder="https://"
+      className={inputClassName}
+    />
+  );
+}
+
 interface CustomFieldCellProps {
   type: CustomColumnType;
   value: string;
@@ -143,17 +312,7 @@ export default function CustomFieldCell({
     }
 
     if (type === "link") {
-      const href = normalizeLink(value);
-      return (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 truncate block"
-        >
-          {value}
-        </a>
-      );
+      return <LinkFieldCell value={value} readOnly onChange={onChange} />;
     }
 
     if (type === "date") {
@@ -185,15 +344,7 @@ export default function CustomFieldCell({
   }
 
   if (type === "link") {
-    return (
-      <input
-        type="url"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder="https://"
-        className={inputClassName}
-      />
-    );
+    return <LinkFieldCell value={value} onChange={onChange} />;
   }
 
   return (
