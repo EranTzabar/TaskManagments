@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest a change to the task board
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Who hits this, and what cannot they do today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What is the idea?
+      description: How should the board behave instead?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Other ways you considered solving it.
+    validations:
+      required: false

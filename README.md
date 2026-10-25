@@ -69,3 +69,13 @@ npm start
 ```
 
 More install, script, and troubleshooting detail: [guid/RUNNING.md](guid/RUNNING.md).
+
+## Contributing
+
+Questions and ideas go in [Discussions](https://github.com/EranTzabar/TaskManagments/discussions). Bugs go in [Issues](https://github.com/EranTzabar/TaskManagments/issues/new/choose).
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request, [SECURITY.md](SECURITY.md) before reporting a vulnerability, and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for how to take part.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
